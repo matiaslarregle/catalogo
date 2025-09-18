@@ -9,7 +9,7 @@ st.title("🛍️ Generador de Catálogo para Tienda Nube")
 uploaded_file = st.file_uploader("Subí el archivo Excel", type=["xlsx"])
 
 if uploaded_file:
-    df_clean = pd.read_excel(uploaded_file, skiprows=7)
+    df_clean = pd.read_excel(uploaded_file, skiprows=6)
     df = df_clean[["Codigo ", "Articulo", "Precio"]]
     df = df.dropna(how="all").reset_index(drop=True)
 
