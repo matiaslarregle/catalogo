@@ -60,6 +60,8 @@ if uploaded_file:
         "º": "ro", "&": "and", "`": "'", "´": "'", "N°": "Nro", "%": "porciento"
     }, regex=True)
 
+    df = df.drop(columns=["Categorías"])
+
     st.success("✅ Datos procesados correctamente")
     st.dataframe(df)
 
