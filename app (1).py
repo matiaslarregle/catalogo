@@ -120,7 +120,3 @@ if uploaded_file:
         file_name="precios.csv",
         mime="text/csv"
     )
-
-        file_name="catalogo.csv",
-        mime="text/csv"
-    )
