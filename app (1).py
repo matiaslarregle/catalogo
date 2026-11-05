@@ -79,23 +79,12 @@ def procesar(uploaded_file):
     df = df.rename(columns={"Codigo": "SKU", "Articulo": "Nombre", "Precio": "Precio"})
 
     df["Precio"] = df["Precio"].apply(parse_precio)
+    df = df.dropna(subset=["Precio"]).reset_index(drop=True)
+    df["Nombre"] = df["Nombre"].astype(str).str.strip().replace(r"\s+", " ", regex=True)
 
-    # Sin nombre no hay producto
-    df = df.dropna(subset=["Nombre"]).reset_index(drop=True)
-    df["Nombre"] = df["Nombre"].astype(str).str.strip().replace(r'\s+', ' ', regex=True)
-
-    df["Identificador de URL"] = (
-        df["Nombre"]
-        .str.lower()
-        .str.replace(r'[^a-z0-9\s-]', '', regex=True)
-        .str.replace(r'\s+', '-', regex=True)
-    )
-
-    df = df.replace({
-        "º": "ro", "&": "and", "`": "'", "´": "'", "N°": "Nro", "%": "porciento"
-    }, regex=True)
-
-    return df
+    # Filas totalmente repetidas (mismo SKU y mismo precio) se dejan una sola vez
+    df = df.drop_duplicates(subset=["SKU", "Precio"]).reset_index(drop=True)
+    return df[["SKU", "Nombre", "Precio"]]
 
 
 uploaded_file = st.file_uploader("Subí la lista de precios (Excel .xls o .xlsx)")
@@ -111,13 +100,27 @@ if uploaded_file:
         st.stop()
 
     st.success(f"✅ Datos procesados correctamente ({len(df)} productos)")
-    st.dataframe(df)
 
-    # Descargar CSV
-    csv = df.to_csv(index=False).encode("utf-8")
+    # SKU repetidos con distinto producto/precio: Tienda Nube no sabría a cuál aplicar el precio
+    conflictos = df[df["SKU"].duplicated(keep=False)].sort_values("SKU")
+    if not conflictos.empty:
+        st.warning(
+            f"⚠️ Hay {conflictos['SKU'].nunique()} SKU repetidos con productos distintos. "
+            "Revisalos antes de subir el archivo:"
+        )
+        st.dataframe(conflictos)
+
+    precios = df[["SKU", "Precio"]]
+    st.dataframe(precios)
+
+    # CSV simple: SKU y Precio
     st.download_button(
-        label="📥 Descargar catálogo en CSV",
-        data=csv,
+        label="📥 Descargar CSV (SKU y Precio)",
+        data=precios.to_csv(index=False).encode("utf-8"),
+        file_name="precios.csv",
+        mime="text/csv"
+    )
+
         file_name="catalogo.csv",
         mime="text/csv"
     )
